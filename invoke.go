@@ -36,12 +36,10 @@ func Generate(filename string, tmpl *template.Template) ([]byte, error) {
 		return nil, err
 	} else {
 		tmpFilename := fp.Name()
-		defer func() {
-			_ = os.Remove(tmpFilename)
-		}()
 
 		if _, err = fp.Write(buff.Bytes()); err != nil {
 			_ = fp.Close()
+			_ = os.Remove(tmpFilename)
 			return nil, err
 		}
 		_ = fp.Close()
@@ -54,6 +52,8 @@ func Generate(filename string, tmpl *template.Template) ([]byte, error) {
 		if err != nil {
 			return nil, err
 		}
+
+		_ = os.Remove(tmpFilename)
 		return data, nil
 	}
 }

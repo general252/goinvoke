@@ -170,6 +170,9 @@ func fieldTypeString(fieldType ast.Expr) string {
 		var arg = 1
 		v := convertMethod("", t, &arg).build().String()
 		return v
+	case *ast.SelectorExpr:
+		v := fmt.Sprintf("%s.%s", fieldTypeString(t.X), fieldTypeString(t.Sel))
+		return v
 	default:
 		return "<unknown>"
 	}
