@@ -65,7 +65,7 @@ type Unimplemented{{ $service.Name }} struct {
 {{ range $method :=.Methods }}
 func (u *Unimplemented{{ $service.Name }}) {{$method.Name}}({{ $method.InString }} ) ({{ $method.OutString }}) {
 	if u.{{ $service.Name }}{{$method.Name}}Func != nil {
-		return u.{{ $service.Name }}{{$method.Name}}Func( {{ $method.InArgs }} )
+		{{ if eq $method.OutArgs "" }} {{else}} {{ $method.OutArgs }} = {{end}} u.{{ $service.Name }}{{$method.Name}}Func( {{ $method.InArgs }} )
 	}
 
 	return {{ $method.OutArgs }}

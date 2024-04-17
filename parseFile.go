@@ -155,29 +155,6 @@ type ObjectInOut struct {
 	Type string
 }
 
-// 返回字段类型的字符串表示形式
-func fieldTypeString(fieldType ast.Expr) string {
-	switch t := fieldType.(type) {
-	case *ast.Ident:
-		return t.Name
-	case *ast.StarExpr:
-		return "*" + fieldTypeString(t.X)
-	case *ast.ArrayType:
-		return "[]" + fieldTypeString(t.Elt)
-	case *ast.MapType:
-		return "map[" + fieldTypeString(t.Key) + "]" + fieldTypeString(t.Value)
-	case *ast.FuncType:
-		var arg = 1
-		v := convertMethod("", t, &arg).build().String()
-		return v
-	case *ast.SelectorExpr:
-		v := fmt.Sprintf("%s.%s", fieldTypeString(t.X), fieldTypeString(t.Sel))
-		return v
-	default:
-		return "<unknown>"
-	}
-}
-
 func convertMethod(methodName string, funcType *ast.FuncType, arg *int) *ObjectMethod {
 	// fmt.Println("方法名称:", method.Names[0].Name)
 	objectMethod := ObjectMethod{
@@ -234,4 +211,85 @@ func convertMethod(methodName string, funcType *ast.FuncType, arg *int) *ObjectM
 	}
 
 	return &objectMethod
+}
+
+// 获取类型名称
+func fieldTypeString(fieldType ast.Expr) string {
+	switch t := fieldType.(type) {
+	case *ast.Ident:
+		return t.Name
+	case *ast.StarExpr:
+		return "*" + fieldTypeString(t.X)
+	case *ast.SelectorExpr:
+		return fieldTypeString(t.X) + "." + t.Sel.Name
+	case *ast.ArrayType:
+		return "[]" + fieldTypeString(t.Elt)
+	case *ast.MapType:
+		return "map[" + fieldTypeString(t.Key) + "]" + fieldTypeString(t.Value)
+	case *ast.ChanType:
+		dir := ""
+		switch t.Dir {
+		case ast.SEND:
+			dir = "chan<-"
+		case ast.RECV:
+			dir = "<-chan"
+		default:
+			dir = "chan"
+		}
+		return dir + " " + fieldTypeString(t.Value)
+	case *ast.Ellipsis:
+		return "..." + fieldTypeString(t.Elt)
+	case *ast.InterfaceType:
+		return "interface{}"
+	case *ast.FuncType:
+		params := fieldListString(t.Params)
+		results := fieldListString(t.Results)
+		return "func" + params + results
+	case *ast.StructType:
+		return "struct{}"
+	case *ast.BasicLit:
+		return t.Value
+	case *ast.ParenExpr:
+		return "(" + fieldTypeString(t.X) + ")"
+	case *ast.FuncLit:
+		return "func" + fieldTypeString(t.Type)
+	case *ast.SliceExpr:
+		return fieldTypeString(t.X) + "[" + fieldTypeString(t.Low) + ":" + fieldTypeString(t.High) + "]"
+	case *ast.IndexExpr:
+		return fieldTypeString(t.X) + "[" + fieldTypeString(t.Index) + "]"
+	case *ast.TypeAssertExpr:
+		return fieldTypeString(t.X) + "." + fieldTypeString(t.Type)
+	case *ast.CallExpr:
+		funcName := fieldTypeString(t.Fun)
+		args := make([]string, len(t.Args))
+		for i, arg := range t.Args {
+			args[i] = fieldTypeString(arg)
+		}
+		return funcName + "(" + joinStrings(args, ", ") + ")"
+	default:
+		return "<unknown>" // reflect.TypeOf(fieldType).String()
+	}
+}
+
+func fieldListString(fields *ast.FieldList) string {
+	if fields == nil {
+		return ""
+	}
+
+	result := "("
+	for i, field := range fields.List {
+		if i > 0 {
+			result += ", "
+		}
+		result += fieldTypeString(field.Type)
+	}
+	result += ")"
+	return result
+}
+
+func joinStrings(strs []string, separator string) string {
+	if len(strs) == 0 {
+		return ""
+	}
+	return strs[0] + joinStrings(strs[1:], separator)
 }

@@ -12,6 +12,10 @@ type Param struct {
 type ServiceA interface {
 	Hello(a string, f func(int)) (int, string, error)
 	Hello2(param *Param) (string, error)
+	Hello3(args ...any) (string, error)
+	Hello4(args2 interface{}) (string, error)
+	Hello5(args2 []int, f func(int, byte)) (string, error)
+	Hello6()
 }
 
 type ServiceB interface {
